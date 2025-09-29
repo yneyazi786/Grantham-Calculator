@@ -1,19 +1,29 @@
-#!/usr/bin/env python
-# coding: utf-8
+#!/usr/bin/env python3
+# grantham_app.py
 
-# In[9]:
-
-
+import sys
+import traceback
+import importlib.metadata as metadata
 import streamlit as st
 
+st.set_page_config(page_title="Grantham Score Calculator", layout="centered")
+st.title("🔬 Grantham Score Calculator")
+st.write("Compute the Grantham distance between two amino acids.")
 
-# In[10]:
-
+# Debug info (hidden by default)
+with st.expander("Debug / Environment"):
+    st.write("Python:", sys.version)
+    st.write("Streamlit:", st.__version__)
+    if st.button("Show installed streamlit package"):
+        try:
+            st.write("streamlit", metadata.version("streamlit"))
+        except metadata.PackageNotFoundError:
+            st.error("Streamlit not found in this environment!")
 
 grantham_matrix = {
-    ('A','C'):195, ('A','D'):126, ('A','E'):107, ('A','F'):113, ('A','G'):60,  ('A','H'):86, 
+    ('A','C'):195, ('A','D'):126, ('A','E'):107, ('A','F'):113, ('A','G'):60,  ('A','H'):86,
     ('A','I'):94,  ('A','K'):106, ('A','L'):96,  ('A','M'):84,  ('A','N'):111, ('A','P'):27,
-    ('A','Q'):91,  ('A','R'):112, ('A','S'):99,  ('A','T'):58,  ('A','V'):64,  ('A','W'):148, 
+    ('A','Q'):91,  ('A','R'):112, ('A','S'):99,  ('A','T'):58,  ('A','V'):64,  ('A','W'):148,
     ('A','Y'):112,
     ('C','D'):154, ('C','E'):170, ('C','F'):205, ('C','G'):159, ('C','H'):174, ('C','I'):198,
     ('C','K'):202, ('C','L'):198, ('C','M'):196, ('C','N'):139, ('C','P'):169, ('C','Q'):154,
@@ -53,10 +63,6 @@ grantham_matrix = {
     ('W','Y'):37
 }
 
-
-# In[11]:
-
-
 amino_acids = "ACDEFGHIKLMNPQRSTVWY"
 symmetric_grantham = {}
 for (a1, a2), val in grantham_matrix.items():
@@ -68,17 +74,7 @@ for aa in amino_acids:
 def grantham_score(wildtype, mutant):
     return symmetric_grantham.get((wildtype, mutant))
 
-
-# In[12]:
-
-
-st.title("🔬 Grantham Score Calculator")
-st.write("Compute the Grantham distance between two amino acids.")
-
-
-# In[13]:
-
-
+# UI
 col1, col2 = st.columns(2)
 with col1:
     wildtype = st.selectbox("Select Wildtype Amino Acid", list(amino_acids))
@@ -86,30 +82,15 @@ with col2:
     mutant = st.selectbox("Select Mutant Amino Acid", list(amino_acids))
 
 if st.button("Calculate"):
-    score = grantham_score(wildtype, mutant)
-    st.success(f"Grantham score between **{wildtype} → {mutant}** is: **{score}**")
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+    try:
+        wt = wildtype.upper()
+        mu = mutant.upper()
+        score = grantham_score(wt, mu)
+        if score is None:
+            st.warning(f"No Grantham score found for {wt} → {mu}.")
+        else:
+            st.success(f"Grantham score between **{wt} → {mu}** is: **{score}**")
+    except Exception as e:
+        st.error("An unexpected error occurred; see details below.")
+        st.exception(e)
+        st.text(traceback.format_exc())
