@@ -6,6 +6,7 @@ import traceback
 import importlib.metadata as metadata
 import streamlit as st
 
+# Page config
 st.set_page_config(page_title="Grantham Score Calculator", layout="centered")
 st.title("🔬 Grantham Score Calculator")
 st.write("Compute the Grantham distance between two amino acids.")
@@ -20,6 +21,7 @@ with st.expander("Debug / Environment"):
         except metadata.PackageNotFoundError:
             st.error("Streamlit not found in this environment!")
 
+# Grantham matrix (symmetric)
 grantham_matrix = {
     ('A','C'):195, ('A','D'):126, ('A','E'):107, ('A','F'):113, ('A','G'):60,  ('A','H'):86,
     ('A','I'):94,  ('A','K'):106, ('A','L'):96,  ('A','M'):84,  ('A','N'):111, ('A','P'):27,
@@ -64,6 +66,7 @@ grantham_matrix = {
 }
 
 amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+
 # Map one-letter codes to three-letter codes
 aa_lookup = {
     "A": "Ala", "C": "Cys", "D": "Asp", "E": "Glu", "F": "Phe",
@@ -72,9 +75,7 @@ aa_lookup = {
     "S": "Ser", "T": "Thr", "V": "Val", "W": "Trp", "Y": "Tyr"
 }
 
-# Prepare options as "Ala (A)" format
-aa_options = [f"{aa_lookup[aa]} ({aa})" for aa in amino_acids]
-
+# Create symmetric Grantham matrix
 symmetric_grantham = {}
 for (a1, a2), val in grantham_matrix.items():
     symmetric_grantham[(a1, a2)] = val
@@ -82,32 +83,34 @@ for (a1, a2), val in grantham_matrix.items():
 for aa in amino_acids:
     symmetric_grantham[(aa, aa)] = 0
 
-def grantham_score(wildtype, mutant):
-    return symmetric_grantham.get((wildtype, mutant))
+def grantham_score(wt, mu):
+    return symmetric_grantham.get((wt, mu))
 
-def get_one_letter_code(selected):
-    # Extract one-letter code from "Ala (A)" -> "A"
-    return selected.split("(")[-1][0]
+def get_one_letter_from_3letter(three_letter):
+    reverse_lookup = {v: k for k, v in aa_lookup.items()}
+    return reverse_lookup[three_letter]
 
-# UI
+# Dropdown options (three-letter codes)
+aa_options_3letter = list(aa_lookup.values())
+
+# UI columns
 col1, col2 = st.columns(2)
 with col1:
-    wildtype_sel = st.selectbox("Select Wildtype Amino Acid", aa_options)
+    wildtype_sel = st.selectbox("Select Wildtype Amino Acid", aa_options_3letter)
 with col2:
-    mutant_sel = st.selectbox("Select Mutant Amino Acid", aa_options)
+    mutant_sel = st.selectbox("Select Mutant Amino Acid", aa_options_3letter)
 
-wildtype = get_one_letter_code(wildtype_sel)
-mutant = get_one_letter_code(mutant_sel)
+wildtype = get_one_letter_from_3letter(wildtype_sel)
+mutant = get_one_letter_from_3letter(mutant_sel)
 
+# Calculate button
 if st.button("Calculate"):
     try:
-        wt = wildtype.upper()
-        mu = mutant.upper()
-        score = grantham_score(wt, mu)
+        score = grantham_score(wildtype, mutant)
         if score is None:
-            st.warning(f"No Grantham score found for {wt} → {mu}.")
+            st.warning(f"No Grantham score found for {wildtype} → {mutant}.")
         else:
-            st.success(f"Grantham score between **{aa_lookup[wt]} ({wt}) → {aa_lookup[mu]} ({mu})** is: **{score}**")
+            st.success(f"Grantham score between **{wildtype_sel} → {mutant_sel}** is: **{score}**")
     except Exception as e:
         st.error("An unexpected error occurred; see details below.")
         st.exception(e)
