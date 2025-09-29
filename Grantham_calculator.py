@@ -64,6 +64,17 @@ grantham_matrix = {
 }
 
 amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+# Map one-letter codes to three-letter codes
+aa_lookup = {
+    "A": "Ala", "C": "Cys", "D": "Asp", "E": "Glu", "F": "Phe",
+    "G": "Gly", "H": "His", "I": "Ile", "K": "Lys", "L": "Leu",
+    "M": "Met", "N": "Asn", "P": "Pro", "Q": "Gln", "R": "Arg",
+    "S": "Ser", "T": "Thr", "V": "Val", "W": "Trp", "Y": "Tyr"
+}
+
+# Prepare options as "Ala (A)" format
+aa_options = [f"{aa_lookup[aa]} ({aa})" for aa in amino_acids]
+
 symmetric_grantham = {}
 for (a1, a2), val in grantham_matrix.items():
     symmetric_grantham[(a1, a2)] = val
@@ -74,12 +85,19 @@ for aa in amino_acids:
 def grantham_score(wildtype, mutant):
     return symmetric_grantham.get((wildtype, mutant))
 
+def get_one_letter_code(selected):
+    # Extract one-letter code from "Ala (A)" -> "A"
+    return selected.split("(")[-1][0]
+
 # UI
 col1, col2 = st.columns(2)
 with col1:
-    wildtype = st.selectbox("Select Wildtype Amino Acid", list(amino_acids))
+    wildtype_sel = st.selectbox("Select Wildtype Amino Acid", aa_options)
 with col2:
-    mutant = st.selectbox("Select Mutant Amino Acid", list(amino_acids))
+    mutant_sel = st.selectbox("Select Mutant Amino Acid", aa_options)
+
+wildtype = get_one_letter_code(wildtype_sel)
+mutant = get_one_letter_code(mutant_sel)
 
 if st.button("Calculate"):
     try:
@@ -89,7 +107,7 @@ if st.button("Calculate"):
         if score is None:
             st.warning(f"No Grantham score found for {wt} → {mu}.")
         else:
-            st.success(f"Grantham score between **{wt} → {mu}** is: **{score}**")
+            st.success(f"Grantham score between **{aa_lookup[wt]} ({wt}) → {aa_lookup[mu]} ({mu})** is: **{score}**")
     except Exception as e:
         st.error("An unexpected error occurred; see details below.")
         st.exception(e)
